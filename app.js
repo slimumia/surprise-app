@@ -1,20 +1,22 @@
 // ==========================================
 // 1. 基本設定
 // ==========================================
-const API_URL = "https://script.google.com/macros/s/AKfycbwdOJ2Cve8l2c5WAq65KyyvnpXarwo9N3oDoLhhAFRiRzAMKWh5Q6-nTTXu1W0MWFPABA/exec"; // <-- ⚠️ 請記得替換為你的 GAS 網址！
-const TRIGGER_RADIUS_KM = 2.0; // ⚠️ 測試用語音建議先設為 500.0，確認有聲音後再改回 2.0
+const API_URL = "https://script.google.com/macros/s/AKfycbwdOJ2Cve8l2c5WAq65KyyvnpXarwo9N3oDoLhhAFRiRzAMKWh5Q6-nTTXu1W0MWFPABA/exec"; 
+const TRIGGER_RADIUS_KM = 2.0; 
 
 let questionsData = [];
 let watchId = null;
+let wakeLock = null; 
 
 const dataStatusEl = document.getElementById('data-status');
 const gpsStatusEl = document.getElementById('gps-status');
 const startBtn = document.getElementById('start-btn');
+const resetBtn = document.getElementById('reset-btn'); 
 const chimeSound = document.getElementById('chime-sound');
 const countdownSound = document.getElementById('countdown-sound');
 
 // ==========================================
-// 2. 初始化與讀取題庫
+// 2. 初始化、讀取題庫與歷史進度
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
   fetchData();
@@ -26,32 +28,44 @@ async function fetchData() {
     const result = await response.json();
 
     if (result.status === "success" && result.data.length > 0) {
+      const triggeredHistory = JSON.parse(localStorage.getItem('triggered_pois')) || [];
+      
       questionsData = result.data;
-      questionsData.forEach(q => q.hasTriggered = false);
+      questionsData.forEach(q => {
+        q.hasTriggered = triggeredHistory.includes(q.name);
+      });
 
-      dataStatusEl.textContent = `載入成功 (${questionsData.length} 題)`;
+      const remainingCount = questionsData.filter(q => !q.hasTriggered).length;
+
+      dataStatusEl.textContent = `載入成功 (共 ${questionsData.length} 題，剩餘 ${remainingCount} 題)`;
       dataStatusEl.className = 'status-text success';
       startBtn.disabled = false;
+      
+      if (triggeredHistory.length > 0) {
+        resetBtn.style.display = 'inline-block';
+      } else {
+        resetBtn.style.display = 'none';
+      }
+
     } else {
       throw new Error("無法解析資料或資料為空");
     }
   } catch (error) {
-    dataStatusEl.textContent = "載入失敗";
+    console.error(error);
+    dataStatusEl.textContent = "載入失敗，請檢查網路或 API";
     dataStatusEl.className = 'status-text error';
   }
 }
 
 // ==========================================
-// 3. 核心：綁定按鈕與解除音效限制 (Unlock Audio)
+// 3. 綁定按鈕 (啟動與重置)
 // ==========================================
 startBtn.addEventListener('click', async () => {
-  // 當按下啟動時，立即「解鎖」語音引擎
   if ('speechSynthesis' in window) {
     const unlockUtterance = new SpeechSynthesisUtterance('');
     window.speechSynthesis.speak(unlockUtterance);
   }
 
-  // 立即「解鎖」HTML 音效檔 (播放並瞬間暫停)
   try {
     if (chimeSound) {
       await chimeSound.play();
@@ -67,9 +81,33 @@ startBtn.addEventListener('click', async () => {
     console.log("音效解鎖通知：", e);
   }
 
-  // 解鎖完成後，開始 GPS 追蹤
+  requestWakeLock();
   startGPS();
 });
+
+resetBtn.addEventListener('click', () => {
+  const confirmReset = confirm("確定要重置所有播報進度嗎？這將會讓所有景點都能再次觸發。");
+  if (confirmReset) {
+    localStorage.removeItem('triggered_pois'); 
+    alert("進度已重置！");
+    location.reload(); 
+  }
+});
+
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      document.addEventListener('visibilitychange', async () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      });
+    } catch (err) {
+      console.log(`喚醒鎖定錯誤: ${err.name}, ${err.message}`);
+    }
+  }
+}
 
 // ==========================================
 // 4. GPS 追蹤與距離計算
@@ -96,6 +134,7 @@ function startGPS() {
   gpsStatusEl.className = 'status-text loading';
   startBtn.textContent = "系統運作中";
   startBtn.disabled = true;
+  resetBtn.style.display = 'none'; 
 
   watchId = navigator.geolocation.watchPosition(
     (position) => {
@@ -126,9 +165,12 @@ function checkTriggers(currentLat, currentLng) {
       if (distance <= TRIGGER_RADIUS_KM) {
         poi.hasTriggered = true; 
         
-        // 觸發時將畫面狀態改為明顯的提示，方便我們除錯確認有確實觸發
+        const triggeredHistory = JSON.parse(localStorage.getItem('triggered_pois')) || [];
+        triggeredHistory.push(poi.name);
+        localStorage.setItem('triggered_pois', JSON.stringify(triggeredHistory));
+        
         startBtn.textContent = `正在播報：${poi.name}`;
-        startBtn.style.backgroundColor = "#E91E63"; // 變成粉紅色
+        startBtn.style.backgroundColor = "#E91E63"; 
         
         triggerDramaSequence(poi); 
       }
@@ -137,28 +179,41 @@ function checkTriggers(currentLat, currentLng) {
 }
 
 // ==========================================
-// 5. 沉浸式廣播劇流程 (語音與音效)
+// 5. 沉浸式廣播劇流程
 // ==========================================
 async function triggerDramaSequence(poi) {
-  console.log(`[觸發] 抵達 ${poi.name}`);
+  try { if (chimeSound) await chimeSound.play(); } catch(e) {}
+  await new Promise(r => setTimeout(r, 2000)); 
 
-  // 1. 播放提示音 (讓乘客意識到有事件發生)
-  try { if (chimeSound) await chimeSound.play(); } catch(e) { console.log("無提示音效"); }
-  await new Promise(r => setTimeout(r, 2000)); // 等待 2 秒
-
-  // 2. 語音：直接唸出「故事文本與猜謎題目」及「選項」
-  // 這裡完全使用你表單裡的文字，只在選項之間加入適當的標點符號讓語音有自然的停頓
-  const questionText = `${poi.question}。選項 A：${poi.optionA}。選項 B：${poi.optionB}。選項 C：${poi.optionC}。`;
+  const questionText = `${poi.question}。選項 ：${poi.optionA}。選項 ：${poi.optionB}。選項 ：${poi.optionC}。`;
   await speakText(questionText);
 
-  // 3. 播放懸疑倒數音樂 (等待乘客討論)
-  try { if (countdownSound) await countdownSound.play(); } catch(e) { console.log("無倒數音效"); }
-  await new Promise(r => setTimeout(r, 15000)); // 等待 15 秒倒數
+  try { if (countdownSound) await countdownSound.play(); } catch(e) {}
+  await new Promise(r => setTimeout(r, 15000)); 
 
-  // 4. 語音：直接揭曉「正確解答與故事結語文本」
   const answerText = `${poi.answer}`;
   await speakText(answerText);
   
-  // 播報完畢，恢復按鈕狀態
   startBtn.textContent = "系統運作中";
   startBtn.style.backgroundColor = "#4CAF50";
+}
+
+function speakText(text) {
+  return new Promise((resolve) => {
+    if (!('speechSynthesis' in window)) {
+      resolve();
+      return;
+    }
+    
+    window.speechSynthesis.cancel(); 
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'zh-TW'; 
+    utterance.rate = 0.95;    
+    
+    utterance.onend = () => resolve();
+    utterance.onerror = () => resolve();
+    
+    window.speechSynthesis.speak(utterance);
+  });
+}
