@@ -142,48 +142,23 @@ function checkTriggers(currentLat, currentLng) {
 async function triggerDramaSequence(poi) {
   console.log(`[觸發] 抵達 ${poi.name}`);
 
-  // 1. 播放提示音
+  // 1. 播放提示音 (讓乘客意識到有事件發生)
   try { if (chimeSound) await chimeSound.play(); } catch(e) { console.log("無提示音效"); }
   await new Promise(r => setTimeout(r, 2000)); // 等待 2 秒
 
-  // 2. 語音唸題目
-  const questionText = `各位乘客請注意，我們即將抵達：${poi.name}。請聽題：${poi.question}。選項 A：${poi.optionA}。選項 B：${poi.optionB}。選項 C：${poi.optionC}。請在倒數結束前，討論出你們的答案。`;
+  // 2. 語音：直接唸出「故事文本與猜謎題目」及「選項」
+  // 這裡完全使用你表單裡的文字，只在選項之間加入適當的標點符號讓語音有自然的停頓
+  const questionText = `${poi.question}。選項 A：${poi.optionA}。選項 B：${poi.optionB}。選項 C：${poi.optionC}。`;
   await speakText(questionText);
 
-  // 3. 播放懸疑倒數音樂
+  // 3. 播放懸疑倒數音樂 (等待乘客討論)
   try { if (countdownSound) await countdownSound.play(); } catch(e) { console.log("無倒數音效"); }
   await new Promise(r => setTimeout(r, 15000)); // 等待 15 秒倒數
 
-  // 4. 語音揭曉解答
-  const answerText = `時間到！解答揭曉。${poi.answer}`;
+  // 4. 語音：直接揭曉「正確解答與故事結語文本」
+  const answerText = `${poi.answer}`;
   await speakText(answerText);
   
   // 播報完畢，恢復按鈕狀態
   startBtn.textContent = "系統運作中";
   startBtn.style.backgroundColor = "#4CAF50";
-}
-
-// 將文字轉語音包裝成 Promise
-function speakText(text) {
-  return new Promise((resolve) => {
-    if (!('speechSynthesis' in window)) {
-      console.log("瀏覽器不支援語音");
-      resolve();
-      return;
-    }
-    
-    window.speechSynthesis.cancel(); 
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-TW'; 
-    utterance.rate = 0.95;    
-    
-    utterance.onend = () => resolve();
-    utterance.onerror = (e) => {
-      console.log("語音發生錯誤：", e);
-      resolve();
-    };
-    
-    window.speechSynthesis.speak(utterance);
-  });
-}
