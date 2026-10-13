@@ -7,6 +7,7 @@ const TRIGGER_RADIUS_KM = 2.0;
 let questionsData = [];
 let watchId = null;
 let wakeLock = null; 
+let isBroadcasting = false; // 💡 新增：播報鎖定，防止多個景點同時觸發互相干擾
 
 const dataStatusEl = document.getElementById('data-status');
 const gpsStatusEl = document.getElementById('gps-status');
@@ -28,6 +29,7 @@ async function fetchData() {
     const result = await response.json();
 
     if (result.status === "success" && result.data.length > 0) {
+      // 💡 讀取記憶進度功能
       const triggeredHistory = JSON.parse(localStorage.getItem('triggered_pois')) || [];
       
       questionsData = result.data;
@@ -41,6 +43,7 @@ async function fetchData() {
       dataStatusEl.className = 'status-text success';
       startBtn.disabled = false;
       
+      // 顯示重置按鈕
       if (triggeredHistory.length > 0) {
         resetBtn.style.display = 'inline-block';
       } else {
@@ -85,6 +88,7 @@ startBtn.addEventListener('click', async () => {
   startGPS();
 });
 
+// 💡 重置進度功能
 resetBtn.addEventListener('click', () => {
   const confirmReset = confirm("確定要重置所有播報進度嗎？這將會讓所有景點都能再次觸發。");
   if (confirmReset) {
@@ -158,6 +162,9 @@ function startGPS() {
 }
 
 function checkTriggers(currentLat, currentLng) {
+  // 💡 如果目前正在播報中，先不觸發新的景點，避免聲音與計時器重疊
+  if (isBroadcasting) return;
+
   for (let i = 0; i < questionsData.length; i++) {
     const poi = questionsData[i];
     if (!poi.hasTriggered) {
@@ -165,6 +172,7 @@ function checkTriggers(currentLat, currentLng) {
       if (distance <= TRIGGER_RADIUS_KM) {
         poi.hasTriggered = true; 
         
+        // 💡 儲存進度到 LocalStorage
         const triggeredHistory = JSON.parse(localStorage.getItem('triggered_pois')) || [];
         triggeredHistory.push(poi.name);
         localStorage.setItem('triggered_pois', JSON.stringify(triggeredHistory));
@@ -173,6 +181,7 @@ function checkTriggers(currentLat, currentLng) {
         startBtn.style.backgroundColor = "#E91E63"; 
         
         triggerDramaSequence(poi); 
+        break; // 💡 觸發一個景點後立刻跳出迴圈，確保一次只處理一個
       }
     }
   }
@@ -182,38 +191,32 @@ function checkTriggers(currentLat, currentLng) {
 // 5. 沉浸式廣播劇流程
 // ==========================================
 async function triggerDramaSequence(poi) {
+  isBroadcasting = true; // 上鎖：開始播報
+
   try { if (chimeSound) await chimeSound.play(); } catch(e) {}
   await new Promise(r => setTimeout(r, 2000)); 
 
-  const questionText = `${poi.question}。選項 ：${poi.optionA}。選項 ：${poi.optionB}。選項 ：${poi.optionC}。`;
+  // 💡 解決重複唸 A, B, C 的問題
+  // 使用 replace 自動切除資料庫字串開頭的 "A.", "B.", "C." 與多餘空白
+  // 這樣即使試算表裡有寫 "A. 答案"，也能轉成乾淨的 "答案" 給語音唸
+  const cleanOptA = poi.optionA.replace(/^[A-Cabc][.、\s]+/i, '');
+  const cleanOptB = poi.optionB.replace(/^[A-Cabc][.、\s]+/i, '');
+  const cleanOptC = poi.optionC.replace(/^[A-Cabc][.、\s]+/i, '');
+
+  const questionText = `${poi.question}。選項 A：${cleanOptA}。選項 B：${cleanOptB}。選項 C：${cleanOptC}。`;
   await speakText(questionText);
 
   try { if (countdownSound) await countdownSound.play(); } catch(e) {}
   await new Promise(r => setTimeout(r, 15000)); 
 
-  const answerText = `${poi.answer}`;
+  // 解答部分同樣過濾掉可能存在的 "A.", "B.", "C." 前綴 (依你的資料庫習慣可自由選擇是否保留此行)
+  const cleanAnswer = poi.answer.replace(/^答案是\s*[A-Cabc][.、\s]*/i, '答案是：');
+  
+  const answerText = `${cleanAnswer}`;
   await speakText(answerText);
   
   startBtn.textContent = "系統運作中";
   startBtn.style.backgroundColor = "#4CAF50";
-}
-
-function speakText(text) {
-  return new Promise((resolve) => {
-    if (!('speechSynthesis' in window)) {
-      resolve();
-      return;
-    }
-    
-    window.speechSynthesis.cancel(); 
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'zh-TW'; 
-    utterance.rate = 0.95;    
-    
-    utterance.onend = () => resolve();
-    utterance.onerror = () => resolve();
-    
-    window.speechSynthesis.speak(utterance);
-  });
+  
+  isBroadcasting = false; // 解鎖：播報結束
 }
