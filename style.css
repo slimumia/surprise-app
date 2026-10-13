@@ -1,0 +1,88 @@
+/* 基礎重置與深色主題 */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Helvetica Neue", Arial, "微軟正黑體", sans-serif;
+  background-color: #121212;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.container {
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+h1 {
+  font-size: 28px;
+  margin-bottom: 40px;
+  color: #4CAF50;
+}
+
+/* 狀態面板樣式 */
+.status-board {
+  background-color: #1e1e1e;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 40px;
+  text-align: left;
+}
+
+.status-item {
+  font-size: 18px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.status-item:last-child {
+  margin-bottom: 0;
+}
+
+.icon {
+  margin-right: 10px;
+  font-size: 24px;
+}
+
+.status-text {
+  font-weight: bold;
+}
+
+/* 狀態顏色 */
+.loading, .waiting { color: #FFC107; }
+.success { color: #4CAF50; }
+.error { color: #F44336; }
+
+/* 啟動按鈕樣式 */
+#start-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 20px 40px;
+  font-size: 24px;
+  font-weight: bold;
+  width: 100%;
+  cursor: pointer;
+  transition: transform 0.1s, background-color 0.3s;
+}
+
+#start-btn:disabled {
+  background-color: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+#start-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}

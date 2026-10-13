@@ -1,0 +1,20 @@
+{
+  "name": "車內驚喜製造機",
+  "short_name": "驚喜製造機",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#4CAF50",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/4CAF50/FFFFFF?text=Car",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512/4CAF50/FFFFFF?text=Car",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

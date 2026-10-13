@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <!-- 確保在手機上以正確比例顯示，不可縮放 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>驚喜製造機</title>
+  
+  <!-- 載入 PWA 設定檔 -->
+  <link rel="manifest" href="manifest.json">
+  <!-- 載入樣式表 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🚗 驚喜製造機</h1>
+    
+    <div class="status-board">
+      <div class="status-item">
+        <span class="icon">📚</span>
+        <span class="label">題庫狀態：</span>
+        <span id="data-status" class="status-text loading">載入中...</span>
+      </div>
+      <div class="status-item">
+        <span class="icon">📍</span>
+        <span class="label">GPS 定位：</span>
+        <span id="gps-status" class="status-text waiting">等待啟動</span>
+      </div>
+    </div>
+
+    <!-- 需要使用者互動才能解鎖語音與喚醒鎖定 -->
+    <button id="start-btn" disabled>啟動系統</button>
+  </div>
+
+  <!-- 載入主程式 -->
+  <script src="app.js"></script>
+</body>
+</html>
