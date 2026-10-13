@@ -2,13 +2,9 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <!-- 確保在手機上以正確比例顯示，不可縮放 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>驚喜製造機</title>
-  
-  <!-- 載入 PWA 設定檔 -->
   <link rel="manifest" href="manifest.json">
-  <!-- 載入樣式表 -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -28,11 +24,13 @@
       </div>
     </div>
 
-    <!-- 需要使用者互動才能解鎖語音與喚醒鎖定 -->
     <button id="start-btn" disabled>啟動系統</button>
   </div>
 
-  <!-- 載入主程式 -->
+  <!-- 加入音效元素 (隱藏在背景) -->
+  <audio id="chime-sound" src="chime.mp3" preload="auto"></audio>
+  <audio id="countdown-sound" src="countdown.mp3" preload="auto"></audio>
+
   <script src="app.js"></script>
 </body>
 </html>
