@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>驚喜製造機</title>
-  
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -23,10 +22,16 @@
         <span class="label">GPS 定位：</span>
         <span id="gps-status" class="status-text waiting">等待啟動</span>
       </div>
+      <!-- 💡 新增：顯示目前的語音引擎 -->
+      <div class="status-item">
+        <span class="icon">🗣️</span>
+        <span class="label">播報語音：</span>
+        <span id="voice-status" class="status-text waiting">偵測中...</span>
+      </div>
     </div>
 
     <button id="start-btn" disabled>啟動系統</button>
-    <!-- 💡 確保這個重置按鈕存在，app.js 才抓得到它 -->
+    <button id="test-btn" style="display: none; background-color: #2196F3; color: white; border: none; border-radius: 50px; padding: 15px 20px; font-size: 18px; margin-top: 15px; width: 100%; cursor: pointer;">🧪 測試語音播報 (免GPS)</button>
     <button id="reset-btn" style="display: none;">🔄 重置播報進度</button>
   </div>
 
