@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>驚喜製造機</title>
+  
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -25,9 +26,10 @@
     </div>
 
     <button id="start-btn" disabled>啟動系統</button>
+    <!-- 💡 確保這個重置按鈕存在，app.js 才抓得到它 -->
+    <button id="reset-btn" style="display: none;">🔄 重置播報進度</button>
   </div>
 
-  <!-- 加入音效元素 (隱藏在背景) -->
   <audio id="chime-sound" src="chime.mp3" preload="auto"></audio>
   <audio id="countdown-sound" src="countdown.mp3" preload="auto"></audio>
 
