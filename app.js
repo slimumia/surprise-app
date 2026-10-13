@@ -2,7 +2,7 @@
 // 1. 基本設定
 // ==========================================
 const API_URL = "https://script.google.com/macros/s/AKfycbwdOJ2Cve8l2c5WAq65KyyvnpXarwo9N3oDoLhhAFRiRzAMKWh5Q6-nTTXu1W0MWFPABA/exec"; // <-- ⚠️ 請記得替換為你的 GAS 網址！
-const TRIGGER_RADIUS_KM = 500.0; // ⚠️ 測試用語音建議先設為 500.0，確認有聲音後再改回 2.0
+const TRIGGER_RADIUS_KM = 2.0; // ⚠️ 測試用語音建議先設為 500.0，確認有聲音後再改回 2.0
 
 let questionsData = [];
 let watchId = null;
